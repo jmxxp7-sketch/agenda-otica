@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Otica - Supabase</title>
+  <meta name="theme-color" content="#f6f7fb">
+  <script>
+    if (localStorage.getItem('otica_theme') !== 'dark') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <span class="spinner-text">Carregando</span>
+  </div>
+
+  <main id="login" class="hidden auth-screen">
+    <section class="auth-panel">
+      <div class="auth-brand">
+        <div class="brand-mark"><i class="fas fa-glasses"></i></div>
+        <div>
+          <h1>Sistema Ótica</h1>
+          <p>Login seguro com Supabase</p>
+        </div>
+      </div>
+
+      <div id="setup-warning" class="setup-warning hidden">
+        <i class="fas fa-triangle-exclamation"></i>
+        Configure `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` em `supabase.js`.
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-mode="login">Entrar</button>
+        <button class="auth-tab" data-mode="signup">Criar admin</button>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <label>
+          Nick
+          <input type="text" id="auth-nick" autocomplete="username" placeholder="admin ou loja-centro" required>
+        </label>
+        <label>
+          Senha
+          <span class="password-row">
+            <input type="password" id="auth-password" autocomplete="current-password" placeholder="Digite sua senha" required>
+            <button class="btn-eye" type="button" data-toggle-password="auth-password" title="Mostrar senha"><i class="fas fa-eye"></i></button>
+          </span>
+        </label>
+        <label id="auth-name-wrap" class="hidden">
+          Nome do administrador
+          <input type="text" id="auth-name" autocomplete="name" placeholder="Seu nome">
+        </label>
+        <button class="btn btn-primary btn-wide" id="auth-submit" type="submit">
+          <i class="fas fa-right-to-bracket"></i>
+          Entrar
+        </button>
+      </form>
+
+      <p class="auth-note">
+        A primeira conta criada vira admin. Depois, o admin cria as lojas e seus logins.
+      </p>
+    </section>
+  </main>
+
+  <div id="app" class="hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <i class="fas fa-glasses"></i>
+        <span>Sistema Ótica</span>
+      </div>
+
+      <div class="store-badge" id="store-badge">
+        <span class="dot"></span>
+        <div>
+          <strong id="badge-title">Conta</strong>
+          <small id="badge-role">Carregando</small>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-btn active" data-view="agenda"><i class="fas fa-calendar-days"></i> Agenda</button>
+        <button class="nav-btn" data-view="clients"><i class="fas fa-user-group"></i> Clientes</button>
+        <button class="nav-btn admin-only hidden" data-view="admin"><i class="fas fa-store"></i> Admin</button>
+      </nav>
+
+      <div class="mini-cal">
+        <div class="mini-cal-header">
+          <button id="cal-prev" title="Mes anterior"><i class="fas fa-chevron-left"></i></button>
+          <span id="cal-title">MES</span>
+          <button id="cal-next" title="Proximo mes"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="mini-cal-weekdays">
+          <span class="domingo">D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+        </div>
+        <div class="mini-cal-days" id="cal-days"></div>
+      </div>
+
+      <div class="view-toggle">
+        <button class="view-btn active" data-mode="grid"><i class="fas fa-table-cells"></i> Geral</button>
+        <button class="view-btn" data-mode="simplified"><i class="fas fa-columns"></i> Simplificado</button>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="btn-logout">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <section class="main">
+      <header class="header">
+        <button class="btn-icon mobile-menu" id="btn-menu" title="Menu"><i class="fas fa-bars"></i></button>
+        <div class="header-date">
+          <span class="day-num" id="h-day">--</span>
+          <div class="day-info">
+            <span class="weekday" id="h-weekday">DIA</span>
+            <span class="month-year" id="h-monthyear">MES ANO</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="conn-status offline" id="conn-status">
+            <span class="pulse"></span>Offline
+          </div>
+          <button class="btn-icon" id="btn-today" title="Hoje"><i class="fas fa-calendar-day"></i></button>
+          <button class="btn-icon" id="btn-refresh" title="Atualizar"><i class="fas fa-sync-alt"></i></button>
+          <button class="btn-icon" id="btn-theme" title="Tema"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+
+      <div class="content" id="content"></div>
+    </section>
+  </div>
+
+  <div class="toast-wrap" id="toasts"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
